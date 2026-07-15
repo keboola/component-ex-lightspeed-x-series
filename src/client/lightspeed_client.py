@@ -28,6 +28,9 @@ _RATE_LIMIT_PACE_THRESHOLD = 5
 _RATE_LIMIT_PACE_SLEEP_SECONDS = 2
 # Versioning exception (design spec §3.3): the OAuth token endpoint stays on 1.0.
 _OAUTH_TOKEN_API_VERSION = "1.0"
+# Cap on consecutive 429 responses before giving up (design spec §4.3 is a rolling
+# window, not an infinite backoff contract).
+_MAX_RATE_LIMIT_RETRIES = 10
 
 
 @dataclass(frozen=True)
@@ -88,18 +91,26 @@ class LightspeedXSeriesClient:
 
     def _get(self, endpoint: str, params: dict) -> dict:
         url = f"{self._base_url()}/{endpoint}"
+        rate_limit_retries = 0
         while True:
             try:
                 response = self._session.get(url, params=params, headers=self._request_headers(), timeout=self._timeout)
-            except requests.exceptions.ConnectionError as exc:
+            except requests.exceptions.RequestException as exc:
                 raise UserException(
                     f"Could not connect to '{url}'. Check the 'domain_prefix' and network connectivity."
                 ) from exc
 
             if response.status_code == 429:
+                rate_limit_retries += 1
+                if rate_limit_retries > _MAX_RATE_LIMIT_RETRIES:
+                    raise UserException(
+                        f"'{url}' is persistently rate-limited (429) after {_MAX_RATE_LIMIT_RETRIES} "
+                        "consecutive retries. The store may be under heavy load; try again later."
+                    )
                 self._wait_for_rate_limit_reset(response)
                 continue
 
+            rate_limit_retries = 0
             self._raise_for_known_errors(response)
             self._pace_near_rate_limit(response)
             return response.json()
@@ -140,7 +151,7 @@ class LightspeedXSeriesClient:
                 },
                 timeout=self._timeout,
             )
-        except requests.exceptions.ConnectionError as exc:
+        except requests.exceptions.RequestException as exc:
             raise UserException(f"Could not reach the OAuth token endpoint '{url}'.") from exc
         self._raise_for_known_errors(response)
         token_payload = response.json()
