@@ -9,6 +9,8 @@ nested object that is not modelled as a child table) is serialised to a
 single JSON string column rather than exploded.
 """
 
+from __future__ import annotations
+
 import json
 from dataclasses import dataclass, field
 from typing import Any

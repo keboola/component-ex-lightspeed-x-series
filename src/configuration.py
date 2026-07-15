@@ -6,6 +6,8 @@ settings) by the platform (see design spec §5, keboola-context/config-rows.md).
 One model covers both.
 """
 
+from __future__ import annotations
+
 from enum import StrEnum
 
 from keboola.component.exceptions import UserException

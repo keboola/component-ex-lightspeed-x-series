@@ -17,3 +17,5 @@ venv
 secrets.json
 tests/functional/*/source/data/out/
 tests/functional/*/source/data/in/
+# component-factory local build artifact (never commit)
+docs/superpowers/*-lifecycle.md
