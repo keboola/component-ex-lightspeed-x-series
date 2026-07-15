@@ -1,1 +1,1 @@
-Enter long description of the component here.
+Lightspeed Retail X-Series is a cloud-based point-of-sale (POS) and retail management platform. This extractor connects to the Lightspeed Retail X-Series REST API and downloads sales, payments, products, inventory, customers and related data into Keboola Storage, so it can be combined with other data sources for reporting and analytics.
