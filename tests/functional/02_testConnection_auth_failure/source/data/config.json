@@ -1,0 +1,9 @@
+{
+  "action": "testConnection",
+  "parameters": {
+    "domain_prefix": "DUMMY_DOMAIN_PREFIX",
+    "api_version": "2026-07",
+    "auth_type": "personal_token",
+    "#personal_token": "deliberately-invalid-token-for-auth-failure-test"
+  }
+}

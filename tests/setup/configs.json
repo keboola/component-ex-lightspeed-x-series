@@ -1,0 +1,204 @@
+[
+  {
+    "name": "01_testConnection_success",
+    "description": "Sync action `testConnection` against a valid personal token — expects a 200 on GET /outlets.",
+    "config": {
+      "action": "testConnection",
+      "parameters": {
+        "domain_prefix": "DUMMY_DOMAIN_PREFIX",
+        "api_version": "2026-07",
+        "auth_type": "personal_token",
+        "#personal_token": "DUMMY_PERSONAL_TOKEN"
+      }
+    }
+  },
+  {
+    "name": "02_testConnection_auth_failure",
+    "description": "Sync action `testConnection` with an invalid personal token — expects a 401 and a failure payload. NOTE: record this test WITHOUT the shared secrets.json (or with a secrets file that omits '#personal_token') so the deliberately-invalid token below is not overwritten by the real one.",
+    "config": {
+      "action": "testConnection",
+      "parameters": {
+        "domain_prefix": "DUMMY_DOMAIN_PREFIX",
+        "api_version": "2026-07",
+        "auth_type": "personal_token",
+        "#personal_token": "deliberately-invalid-token-for-auth-failure-test"
+      }
+    }
+  },
+  {
+    "name": "03_sales_first_run",
+    "description": "No input state -> after=0, full history. Produces `sales` + 4 child tables (design spec §7).",
+    "config": {
+      "action": "run",
+      "parameters": {
+        "domain_prefix": "DUMMY_DOMAIN_PREFIX",
+        "api_version": "2026-07",
+        "auth_type": "personal_token",
+        "#personal_token": "DUMMY_PERSONAL_TOKEN",
+        "object": "sales",
+        "load_type": "incremental_load",
+        "page_size": 200
+      }
+    }
+  },
+  {
+    "name": "04_sales_incremental",
+    "description": "Seeded in/state.json {\"last_version\": N} -> asserts `after=N` request and advanced `last_version` in output state. NOTE: after recording 03_sales_first_run, copy its out/state.json last_version into this test's in/state.json before re-recording (or record independently against a store that has changed since the first-run cutoff).",
+    "config": {
+      "action": "run",
+      "parameters": {
+        "domain_prefix": "DUMMY_DOMAIN_PREFIX",
+        "api_version": "2026-07",
+        "auth_type": "personal_token",
+        "#personal_token": "DUMMY_PERSONAL_TOKEN",
+        "object": "sales",
+        "load_type": "incremental_load",
+        "page_size": 200
+      }
+    }
+  },
+  {
+    "name": "05_products",
+    "description": "Happy path for `products` (+ `product_images` child table).",
+    "config": {
+      "action": "run",
+      "parameters": {
+        "domain_prefix": "DUMMY_DOMAIN_PREFIX",
+        "api_version": "2026-07",
+        "auth_type": "personal_token",
+        "#personal_token": "DUMMY_PERSONAL_TOKEN",
+        "object": "products",
+        "load_type": "incremental_load",
+        "page_size": 200
+      }
+    }
+  },
+  {
+    "name": "06_inventory",
+    "description": "Happy path for `inventory` (composite product_id+outlet_id PK, no child tables).",
+    "config": {
+      "action": "run",
+      "parameters": {
+        "domain_prefix": "DUMMY_DOMAIN_PREFIX",
+        "api_version": "2026-07",
+        "auth_type": "personal_token",
+        "#personal_token": "DUMMY_PERSONAL_TOKEN",
+        "object": "inventory",
+        "load_type": "incremental_load",
+        "page_size": 200
+      }
+    }
+  },
+  {
+    "name": "07_customers",
+    "description": "Happy path for `customers`. Cassette response bodies get PII field names (email, phone, first_name, ...) scrubbed by the component's BodyFieldSanitizer.",
+    "config": {
+      "action": "run",
+      "parameters": {
+        "domain_prefix": "DUMMY_DOMAIN_PREFIX",
+        "api_version": "2026-07",
+        "auth_type": "personal_token",
+        "#personal_token": "DUMMY_PERSONAL_TOKEN",
+        "object": "customers",
+        "load_type": "incremental_load",
+        "page_size": 200
+      }
+    }
+  },
+  {
+    "name": "08_outlets",
+    "description": "Happy path for `outlets` — a cheap, small reference stream. Good candidate to record first.",
+    "config": {
+      "action": "run",
+      "parameters": {
+        "domain_prefix": "DUMMY_DOMAIN_PREFIX",
+        "api_version": "2026-07",
+        "auth_type": "personal_token",
+        "#personal_token": "DUMMY_PERSONAL_TOKEN",
+        "object": "outlets",
+        "load_type": "incremental_load",
+        "page_size": 200
+      }
+    }
+  },
+  {
+    "name": "09_registers",
+    "description": "Happy path for `registers` — a cheap, small reference stream. Good candidate to record first.",
+    "config": {
+      "action": "run",
+      "parameters": {
+        "domain_prefix": "DUMMY_DOMAIN_PREFIX",
+        "api_version": "2026-07",
+        "auth_type": "personal_token",
+        "#personal_token": "DUMMY_PERSONAL_TOKEN",
+        "object": "registers",
+        "load_type": "incremental_load",
+        "page_size": 200
+      }
+    }
+  },
+  {
+    "name": "10_payment_types",
+    "description": "Happy path for `payment_types` — a cheap, small reference stream.",
+    "config": {
+      "action": "run",
+      "parameters": {
+        "domain_prefix": "DUMMY_DOMAIN_PREFIX",
+        "api_version": "2026-07",
+        "auth_type": "personal_token",
+        "#personal_token": "DUMMY_PERSONAL_TOKEN",
+        "object": "payment_types",
+        "load_type": "incremental_load",
+        "page_size": 200
+      }
+    }
+  },
+  {
+    "name": "11_auth_failure",
+    "description": "`run` action (not just the sync action) against an invalid token on the cheap `outlets` object -> expects exit 1. NOTE: same recording caveat as 02_testConnection_auth_failure — do not let the shared secrets.json's real token overwrite the deliberately-invalid one below.",
+    "config": {
+      "action": "run",
+      "parameters": {
+        "domain_prefix": "DUMMY_DOMAIN_PREFIX",
+        "api_version": "2026-07",
+        "auth_type": "personal_token",
+        "#personal_token": "deliberately-invalid-token-for-auth-failure-test",
+        "object": "outlets",
+        "load_type": "incremental_load",
+        "page_size": 200
+      }
+    }
+  },
+  {
+    "name": "12_rate_limit_retry",
+    "description": "A 429 (with a near-future RFC1123 Retry-After date) then 200 -> asserts the client waits and completes. NOTE: real stores rarely 429 on demand — after an initial live recording of a normal successful call, hand-edit the recorded cassette's first response to a 429 with a `Retry-After` header a few seconds in the future (not a fabricated body — same real request/response pair, edited status+headers) and keep the following real 200 response as-is.",
+    "config": {
+      "action": "run",
+      "parameters": {
+        "domain_prefix": "DUMMY_DOMAIN_PREFIX",
+        "api_version": "2026-07",
+        "auth_type": "personal_token",
+        "#personal_token": "DUMMY_PERSONAL_TOKEN",
+        "object": "outlets",
+        "load_type": "incremental_load",
+        "page_size": 200
+      }
+    }
+  },
+  {
+    "name": "13_empty_first_page",
+    "description": "`data: []` on the very first page -> zero rows, no crash, state unchanged/graceful. Record against an object/store combination that genuinely has zero rows (e.g. `payment_types` on a fresh trial store before any custom payment type is added), or set a very high `after` cursor via in/state.json so nothing new is returned.",
+    "config": {
+      "action": "run",
+      "parameters": {
+        "domain_prefix": "DUMMY_DOMAIN_PREFIX",
+        "api_version": "2026-07",
+        "auth_type": "personal_token",
+        "#personal_token": "DUMMY_PERSONAL_TOKEN",
+        "object": "payment_types",
+        "load_type": "incremental_load",
+        "page_size": 200
+      }
+    }
+  }
+]

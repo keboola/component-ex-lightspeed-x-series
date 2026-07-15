@@ -10,6 +10,7 @@ import logging
 
 from keboola.component.base import ComponentBase, sync_action
 from keboola.component.exceptions import UserException
+from keboola.vcr import BodyFieldSanitizer, DefaultSanitizer, UrlPatternSanitizer
 
 from client.lightspeed_client import LightspeedXSeriesClient
 from configuration import Configuration, LoadType
@@ -17,6 +18,41 @@ from flattener import FlattenResult, flatten_records
 from streams import STREAM_REGISTRY, ChildTableSpec, ColumnSchema, StreamDefinition
 
 _STATE_LAST_VERSION = "last_version"
+
+# VCR test recording/replay sanitizers (design spec §7). The framework already
+# auto-redacts every `#`-prefixed config secret (e.g. `#personal_token`) and
+# strips the `Authorization` header via its default header whitelist, so
+# those two don't need to be listed explicitly here. What's left:
+#   - `domain_prefix` — not a secret field, but it names the real store and
+#     appears in the request host (`https://{domain_prefix}.retail.lightspeed.app/…`),
+#     so it's scrubbed generically regardless of which store recorded the cassette.
+#   - customer/sale PII field names — redacted by name (not by exact value,
+#     since real customer data varies per store) wherever they appear in
+#     response bodies, including nested (`sales.customer`, per §4.4).
+VCR_SANITIZERS = [
+    DefaultSanitizer(additional_sensitive_fields=["domain_prefix"]),
+    UrlPatternSanitizer(
+        patterns=[(r"https://[^./]+\.retail\.lightspeed\.app", "https://test-store.retail.lightspeed.app")]
+    ),
+    BodyFieldSanitizer(
+        fields=[
+            "email",
+            "phone",
+            "mobile",
+            "first_name",
+            "last_name",
+            "company_name",
+            "customer_code",
+            "note",
+            "date_of_birth",
+            "physical_address_1",
+            "physical_city",
+            "physical_state",
+            "physical_postcode",
+        ],
+        nested=True,
+    ),
+]
 
 
 class Component(ComponentBase):
